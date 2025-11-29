@@ -2,6 +2,8 @@ import { wrap } from 'bytebuffer';
 import { Image, loadImage } from 'canvas';
 import { decompress } from 'fzstd';
 import { Data, inflate } from 'pako';
+import sharp from 'sharp';
+import { NitroLogger } from '../NitroLogger';
 import { IAssetData } from './interfaces';
 
 export class NitroBundle
@@ -64,17 +66,32 @@ export class NitroBundle
             }
             else
             {
-                let mimeType = 'image/png';
+                let finalBuffer = decompressed;
 
                 if (decompressed.length > 12 && decompressed[0] === 0x52 && decompressed[1] === 0x49 && decompressed[2] === 0x46 && decompressed[3] === 0x46 && decompressed[8] === 0x57 && decompressed[9] === 0x45 && decompressed[10] === 0x42 && decompressed[11] === 0x50)
                 {
-                    mimeType = 'image/webp';
+                    try 
+                    {
+                        finalBuffer = await sharp(decompressed).png().toBuffer();
+                    }
+                    catch (err)
+                    {
+                        NitroLogger.error(`Failed to convert WebP to PNG for ${fileName}: ${err.message}`);
+                    }
                 }
 
-                const base64 = NitroBundle.arrayBufferToBase64(decompressed.slice().buffer);
+                const base64 = NitroBundle.arrayBufferToBase64(finalBuffer.slice().buffer);
 
-                const baseTexture = await loadImage(`data:${ mimeType };base64,${ base64 }`);
-                this._baseTexture = baseTexture;
+                try 
+                {
+                    const baseTexture = await loadImage(`data:image/png;base64,${ base64 }`);
+                    this._baseTexture = baseTexture;
+                }
+                catch (err)
+                {
+                    NitroLogger.error(`Failed to load image ${fileName}: ${err.message}`);
+                    throw err;
+                }
             }
             fileCount--;
         }
