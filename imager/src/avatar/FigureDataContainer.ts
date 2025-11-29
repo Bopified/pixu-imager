@@ -13,6 +13,7 @@ export class FigureDataContainer
     private static HAT: string = 'ha';
     private static HEAD_ACCESSORIES: string = 'he';
     private static EYE_ACCESSORIES: string = 'ea';
+    private static FACE: string = 'fc';
     private static FACE_ACCESSORIES: string = 'fa';
     private static JACKET: string = 'cc';
     private static SHIRT: string = 'ch';
@@ -147,6 +148,7 @@ export class FigureDataContainer
             case FigureDataContainer.HAT:
             case FigureDataContainer.HEAD_ACCESSORIES:
             case FigureDataContainer.EYE_ACCESSORIES:
+            case FigureDataContainer.FACE:
             case FigureDataContainer.FACE_ACCESSORIES:
             case FigureDataContainer.SHIRT:
             case FigureDataContainer.JACKET:
@@ -175,6 +177,7 @@ export class FigureDataContainer
             case FigureDataContainer.HAT:
             case FigureDataContainer.HEAD_ACCESSORIES:
             case FigureDataContainer.EYE_ACCESSORIES:
+            case FigureDataContainer.FACE:
             case FigureDataContainer.FACE_ACCESSORIES:
             case FigureDataContainer.SHIRT:
             case FigureDataContainer.JACKET:

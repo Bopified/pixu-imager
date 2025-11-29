@@ -1,5 +1,6 @@
 import { wrap } from 'bytebuffer';
 import { Image, loadImage } from 'canvas';
+import { decompress } from 'fzstd';
 import { Data, inflate } from 'pako';
 import { IAssetData } from './interfaces';
 
@@ -34,33 +35,50 @@ export class NitroBundle
     }
 
     private async parse(arrayBuffer: ArrayBuffer): Promise<void>
-	{
-		const binaryReader = wrap(arrayBuffer);
-		let fileCount = binaryReader.readShort();
-		
-		while (fileCount > 0)
-			{
-			const fileNameLength = binaryReader.readShort();
-			const fileName = binaryReader.readString(fileNameLength);
-			const fileLength = binaryReader.readInt();
-			const buffer = binaryReader.readBytes(fileLength);
-		
-			if (fileName.endsWith('.json'))
-			{
-				const decompressed = inflate((buffer.toArrayBuffer() as Data));
-				this._jsonFile = JSON.parse(NitroBundle.TEXT_DECODER.decode(decompressed));
-			}
-			else
-			{
-				const decompressed = inflate((buffer.toArrayBuffer() as Data));
-				const base64 = NitroBundle.arrayBufferToBase64(decompressed.buffer.slice(0) as ArrayBuffer);
-				
-				const baseTexture = await loadImage('data:image/png;base64,' + base64);
-				this._baseTexture = baseTexture;
-			}
-			fileCount--;
-		}
-	}
+    {
+        const binaryReader = wrap(arrayBuffer);
+        let fileCount = binaryReader.readShort();
+
+        while (fileCount > 0)
+        {
+            const fileNameLength = binaryReader.readShort();
+            const fileName = binaryReader.readString(fileNameLength);
+            const fileLength = binaryReader.readInt();
+            const buffer = binaryReader.readBytes(fileLength);
+
+            const uint8Buffer = new Uint8Array(buffer.toArrayBuffer());
+            let decompressed: Uint8Array = null;
+
+            if (uint8Buffer.length > 4 && uint8Buffer[0] === 0x28 && uint8Buffer[1] === 0xB5 && uint8Buffer[2] === 0x2F && uint8Buffer[3] === 0xFD)
+            {
+                decompressed = decompress(uint8Buffer);
+            }
+            else
+            {
+                decompressed = inflate(uint8Buffer);
+            }
+
+            if (fileName.endsWith('.json'))
+            {
+                this._jsonFile = JSON.parse(NitroBundle.TEXT_DECODER.decode(decompressed));
+            }
+            else
+            {
+                let mimeType = 'image/png';
+
+                if (decompressed.length > 12 && decompressed[0] === 0x52 && decompressed[1] === 0x49 && decompressed[2] === 0x46 && decompressed[3] === 0x46 && decompressed[8] === 0x57 && decompressed[9] === 0x45 && decompressed[10] === 0x42 && decompressed[11] === 0x50)
+                {
+                    mimeType = 'image/webp';
+                }
+
+                const base64 = NitroBundle.arrayBufferToBase64(decompressed.slice().buffer);
+
+                const baseTexture = await loadImage(`data:${ mimeType };base64,${ base64 }`);
+                this._baseTexture = baseTexture;
+            }
+            fileCount--;
+        }
+    }
 
     public get jsonFile(): IAssetData
     {

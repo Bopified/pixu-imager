@@ -9,6 +9,7 @@
     "cli-color": "^2.0.4",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "fzstd": "^0.1.1",
     "gifencoder": "^2.0.1",
     "node-fetch": "3.3.2",
     "pako": "^2.1.0"
